@@ -1,123 +1,100 @@
 # -*- coding: utf-8 -*-
 
-"""Modelacion de modelo mental con tres nodos basado en el articulo de Salmeron 2013"""
-
+"""
+Modelacion de modelo mental con tres nodos basado
+en el articulo de Salmeron 2013
+"""
+import pycxsimulator
 import networkx as nx
 import random as rd
 import matplotlib.pyplot as plt
 import math as mt
+from pprint import pprint
 
-#initialization
 
-#time = [] tiempo
+U_global = []  # Utilidad global
 
-U_global = [] #Utilidad global
+state_h = []  # Estado del nodo happiness
 
-state_h = [] #Estado del nodo happiness
+state_g = []  # Estado del nodo greeness
 
-state_g = [] #Estado del nodo greeness
+state_n = []  # Estado del nodo neighbors happiness perception
 
-state_n = [] #Estado del nodo neighbors happiness perception
+positions = None
+
+G = 0.8
+
 
 def init():
-    global time, g, U_global, state_h, state_g, state_n
+    global time, g, U_global, state_h, state_g, state_n, positions
 
     time = 0
-    
+
     g = nx.DiGraph()
 
-    #h = nx.DiGraph()
+    nds = ['h', 'g', 'n']
 
-    nds = ['h','g','n']
-    
     g.add_nodes_from(nds)
 
-    #h.add_nodes_from(nds)
+    # El valor de los nodos esta entre 0 y 1 [0,1] y cuando es el caso,
+    # la función es un sigmoidal Salmeron 2013:8
 
-#El valor de los nodos esta entre 0 y 1 [0,1] y cuando es el caso, la función es un sigmoidal Salmeron 2013:8    
-    
-    for i in g.nodes():
-        for j in g.nodes():
-            if i != j:
-                g.add_edge(i, j)
-                g.add_edge(j,i)
+    g.add_edge('g', 'h', w=0.5)
+    g.add_edge('n', 'h', w=1)
+    g.add_edge('n', 'g', w=1)
 
-
-    for i in g.nodes():
-        g.node[i]['s'] = 0
-
-
-    for i,j in g.edges():
-        g[i][j]['w'] = rd.random()
+    g.node['h']['s'] = 0
+    g.node['g']['s'] = 0.1
+    g.node['n']['s'] = 0
 
     positions = nx.random_layout(g)
 
-def draw():
 
+def draw():
     plt.cla()
-    #nodeSize = [100*g.node[i]['s'] for i in g.nodes(g)]
-    nx.draw(g, edge_color = 'c', cmap = plt.cm.RdBu, vmin = 0, vmax = 1, alpha=0.75)
+    nx.draw(g, edge_color='c',
+            cmap=plt.cm.RdBu,
+            vmin=0, vmax=1, alpha=0.75, pos=positions)
+    nx.draw_networkx_labels(g, pos=positions)
     plt.axis('image')
     plt.title('t = ' + str(time))
-    
-#Steps
+
 
 def sigmoid(x):
+    """ sigmoide """
+    return 1 / (1 + mt.e ** -x)
 
-    return 1 / (1 + mt.e ** -x) #función sigmoide
 
 def step():
 
-    global time, g, U_global, state_h, state_g, state_n
-    time +=1
-    
-    for i in g.nodes():
-    #i_state = f(g.node[i]['s'] + sum(wij) g.neighbors['s'])    
+    global time, g, U_global, state_h, state_g, state_n, G
 
-        suma_Wij = 0
+    state_h.append(g.node['h']['s'])
+    state_g.append(g.node['g']['s'])
+    state_n.append(g.node['n']['s'])
+    print g.node['h']['s'], g.node['g']['s'], g.node['n']['s']
 
-        for j in g.neighbors(i):
-            suma_Wij += g[i][j]['w'] * g.node[j]['s']
-            
-        g.node[i]['s']= sigmoid(g.node[i]['s'] + suma_Wij)
+    g1 = g.copy()
 
-        #print g.node[i]['s']
+    g1.node['h']['s'] = sum([(g.node[j]['s'] * g[j]['h']['w'])
+                             for j in g.predecessors('h')])
+    g1.node['n']['s'] = sum([(g.node[j]['s'] * g[j]['n']['w'])
+                             for j in g.predecessors('n')])
+    g1.node['g']['s'] = sum([(g.node[j]['s'] * g[j]['g']['w'])
+                             for j in g.predecessors('g')]) + G
+    # Time
+    time += 1
 
-        if g.node[i] == g.node['h']:
-            state_h.append(g.node[i]['s'])
-        if g.node[i] == g.node['g']:
-            state_g.append(g.node[i]['s'])
-        if g.node[i] == g.node['n']:
-            state_n.append(g.node[i]['s'])
-
-        for i in g.nodes():
-            suma =  g.node['h']['s'] + g.node['g']['s'] + g.node['n']['s']
-        U_global.append(suma)
-
-            
-        #print state_h
-        #print state_g
-        #print state_n
-
-#Los FCM no actualizan los pesos de las conecciones, por eso añaden Hebbian learning
+    g = g1.copy()
 
 
-import pycxsimulator
-pycxsimulator.GUI().start(func=[init,draw,step])
+# Los FCM no actualizan los pesos de las conecciones,
+# por eso añaden Hebbian learning
 
+pycxsimulator.GUI().start(func=[init, draw, step])
+
+pprint(state_h)
 
 plt.cla()
-#plt.plot(time_list, energy_state_g, 'b+')
-#plt.plot(time_list, energy_state_o, 'r-')
-fig, (ax1, ax2) = plt.subplots(2, sharey=True)
-ax1.plot(state_h, 'r^', state_g, 'g^', state_n, 'b^' )
-ax1.set(title= 'Local and global states', ylabel='Nodes state')
-ax2.plot(U_global, 'bo')
-ax2.set(xlabel='Time', ylabel='Global state')
-fig.savefig('estados.svg')
-#plt.savefig('learning_plot_small.svg')
-#plt.savefig('learning_plot_erdos.svg')
-
-
-# nx.draw(g)
-# pl.show()
+plt.plot(state_h, 'r^', state_g, 'g^', state_n, 'b^')
+plt.savefig('estados.png')
