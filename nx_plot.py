@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 
 
 def draw_graph(g):
+    plt.figure()
     pos = nx.circular_layout(g, scale=0.5)
 
     node_scale = 11000
@@ -31,4 +32,5 @@ def draw_graph(g):
                                  label_pos=0.3)
 
     plt.axis('off')  # don't print useless scale
+    
 
