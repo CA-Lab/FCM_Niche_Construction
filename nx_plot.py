@@ -3,21 +3,21 @@ import matplotlib.pyplot as plt
 
 
 def draw_graph(g):
-    pos = nx.circular_layout(g)
+    pos = nx.circular_layout(g, scale=0.5)
 
-    node_scale = 10000
+    node_scale = 11000
 
     nx.draw_networkx_nodes(g, pos,
-                           node_size=[node_scale * g.node[n]['s']
+                           node_size=[node_scale * g.node[n]['dvc']
                                       for n in g.nodes],
                            node_color="grey")
 
     nx.draw_networkx_labels(g,
                             pos,
-                            labels={n: "c%s s=%s" % (n, g.node[n]['s'])
+                            labels={n: "c%s DVC=%s" % (n, g.node[n]['dvc'])
                                     for n in g.nodes},
                             font_color='white',
-                            font_size=11,
+                            font_size=9,
                             font_family='sans-serif')
 
     nx.draw_networkx_edges(g, pos,
@@ -31,3 +31,4 @@ def draw_graph(g):
                                  label_pos=0.3)
 
     plt.axis('off')  # don't print useless scale
+
